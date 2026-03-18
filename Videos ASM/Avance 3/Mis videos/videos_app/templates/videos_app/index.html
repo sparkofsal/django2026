@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Projecto Django Videos</title>
+
+  {% load static post_extras %}
+  <link rel="stylesheet" href="{% static 'videos_app/css/styles.css' %}">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>Videos ASM</h1>
+      <p class="subtitle">Registro y administración de videos</p>
+    </header>
+
+    {% if modo == "exito" %}
+      <section class="card success">
+        <h2>✅ Guardado en Base de Datos</h2>
+        <p><strong>Usuario:</strong> {{ usuario.nomina }} - {{ usuario.nombre }}</p>
+        <p><strong>Videos registrados:</strong> {{ cantidad }}</p>
+        <a class="btn" href="{% url 'videos_app:index' %}">Registrar otro</a>
+      </section>
+    {% endif %}
+
+    {% if modo == "usuario" %}
+      <section class="card">
+        <h2>Datos del Usuario</h2>
+
+        <form method="post" class="form" novalidate>
+          {% csrf_token %}
+
+          <div class="field">
+            <label for="id_nomina">Nómina (alfanumérico, sin espacios)</label>
+            {{ usuario_form.nomina }}
+            {% if usuario_form.nomina.errors %}
+              <div class="error">{{ usuario_form.nomina.errors.0 }}</div>
+            {% endif %}
+            <small class="hint">Ej: ARMANDO123</small>
+          </div>
+
+          <div class="field">
+            <label for="id_nombre">Nombre (solo letras y espacios)</label>
+            {{ usuario_form.nombre }}
+            {% if usuario_form.nombre.errors %}
+              <div class="error">{{ usuario_form.nombre.errors.0 }}</div>
+            {% endif %}
+            <small class="hint">Ej: Armando Salazar</small>
+          </div>
+
+          <div class="field">
+            <label for="id_cantidad_videos">Cantidad de videos (entero)</label>
+            {{ usuario_form.cantidad_videos }}
+            {% if usuario_form.cantidad_videos.errors %}
+              <div class="error">{{ usuario_form.cantidad_videos.errors.0 }}</div>
+            {% endif %}
+            <small class="hint">Mínimo 1</small>
+          </div>
+
+          <div class="actions">
+            <button type="submit" class="btn primary">Continuar</button>
+          </div>
+        </form>
+      </section>
+    {% endif %}
+
+    {% if modo == "videos" %}
+      <section class="card">
+        <h2>Captura de Videos ({{ cantidad }})</h2>
+        <p class="subtitle2">Completa los datos y presiona <strong>Guardar</strong>.</p>
+
+        <form method="post" class="form" id="form-videos" novalidate>
+          {% csrf_token %}
+          <input type="hidden" name="paso" value="videos" />
+
+          <!-- Re-enviar usuario -->
+          <input type="hidden" name="nomina" value="{{ usuario_form.cleaned_data.nomina|default_if_none:'' }}">
+          <input type="hidden" name="nombre" value="{{ usuario_form.cleaned_data.nombre|default_if_none:'' }}">
+          <input type="hidden" name="cantidad_videos" value="{{ cantidad }}">
+
+          <!-- Resumen usuario -->
+          <div class="summary">
+            <div><strong>Nómina:</strong> {{ usuario_form.cleaned_data.nomina }}</div>
+            <div><strong>Nombre:</strong> {{ usuario_form.cleaned_data.nombre }}</div>
+          </div>
+
+          {% for idx, vf in video_forms %}
+            <div class="video-block">
+              <h3>Video {{ idx }}</h3>
+
+              <div class="grid">
+                <div class="field">
+                  <label for="titulo_{{ idx }}">Título</label>
+                  <input id="titulo_{{ idx }}" name="titulo_{{ idx }}" type="text"
+                         value="{{ request.POST|get_item:'titulo_'|default:'' }}"
+                         data-validate="alfanum"
+                         placeholder="Ej: Mi Video 2026" />
+                  {% if vf.titulo.errors %}<div class="error">{{ vf.titulo.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="field">
+                  <label for="nombre_{{ idx }}">Nombre</label>
+                  <input id="nombre_{{ idx }}" name="nombre_{{ idx }}" type="text"
+                         value="{{ request.POST|get_item:'nombre_'|default:'' }}"
+                         data-validate="alfanum"
+                         placeholder="Ej: Mi Video" />
+                  {% if vf.nombre.errors %}<div class="error">{{ vf.nombre.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="field">
+                  <label for="extension_{{ idx }}">Extensión</label>
+                  <input id="extension_{{ idx }}" name="extension_{{ idx }}" type="text"
+                         value="{{ request.POST|get_item:'extension_'|default:'' }}"
+                         data-validate="alfanum"
+                         placeholder="Ej: mp4" />
+                  {% if vf.extension.errors %}<div class="error">{{ vf.extension.errors.0 }}</div>{% endif %}
+                </div>
+
+                <div class="field">
+                  <label for="tamano_{{ idx }}">Tamaño (MB) máximo 3</label>
+                  <input id="tamano_{{ idx }}" name="tamano_{{ idx }}" type="number" step="0.1" min="0.1" max="3"
+                         value="{{ request.POST|get_item:'tamano_'|default:'' }}"
+                         data-validate="tamano"
+                         placeholder="Ej: 2.5" />
+                  {% if vf.tamano_mb.errors %}<div class="error">{{ vf.tamano_mb.errors.0 }}</div>{% endif %}
+                </div>
+              </div>
+
+              <div class="client-error" id="err_{{ idx }}"></div>
+            </div>
+          {% endfor %}
+
+          <div class="actions">
+            <button type="submit" class="btn primary" id="btn-guardar">Guardar</button>
+            <a class="btn" href="{% url 'videos_app:index' %}">Cancelar</a>
+          </div>
+        </form>
+      </section>
+
+      <script src="{% static 'videos_app/js/validaciones.js' %}"></script>
+    {% endif %}
+
+    <footer class="footer">
+      <small>Videos ASM • Proyecto Tecmilenio • Django + PostgreSQL</small>
+    </footer>
+  </div>
+</body>
+</html>
